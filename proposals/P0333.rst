@@ -1,0 +1,155 @@
+================================================================================
+P0333r0 : Improving the Specification of Exception Handling in the Parallel STL 
+================================================================================
+
+:Project: ISO JTC1/SC22/WG21: Programming Language C++
+:Number: P0333r0
+:Date: 2016-05-15
+:Reply-to: balelbach@lbl.gov
+:Author: Bryce Adelstein Lelbach 
+:Contact: balelbach@lbl.gov
+:Audience: Library Evolution Working Group (LEWG)
+:Audience: Study Group 1 - Concurrency (SG1)
+:Audience: Library Working Group (LWG) 
+:URL: https://github.com/brycelelbach/wg21_p0333_improving_parallel_algorithms_exception_handling/blob/master/proposals/P0333.rst
+
+.. sectnum::
+
+********************************************************************************
+Overview
+********************************************************************************
+
+The Parallelism Technical Specification (<DOCUMENT NUMBER>) introduced a
+parallel algorithms library based on the existing standard algorithms library.
+At the Feburary 2016 meeting in Jacksonville, the Parallelism TS was voted into
+the C++17 working draft. 
+
+The authors of this paper have identified what we believe to be defects in the
+specification of the parallel algorithm exception handling (25.2.4,
+[algorithms.parallel.exceptions]). 
+
+********************************************************************************
+Uncaught Element Access Function Exceptions Shouldn't Lead to terminate()
+********************************************************************************
+
+The exception handling behavior of parallel algorithms invoked with ``par_vec``
+(the ``parallel_vector_execution_policy``) is inconsistent with the exception
+handling behavior of the other two execution policies specified in the IS
+(``sequential`` AKA ``sequential_execution_policy`` and ``par`` AKA
+``parallel_execution_policy``).
+
+25.2.4 [algorithms.parallel.exception] states that if element access function
+exits via an uncaught exception in an parallel algorithm invoked under the
+``par_vec``, ``terminate()`` will be called. This is inconsistent with the
+other two policies, which would exit by throwing either the uncaught exception,
+or an ``exception_list`` containing (at least) the uncaught exception.
+
+Additionally, the parallel algorithms may throw ``bad_alloc`` if they are
+unable to allocate the data structures needed to manage parallel execution -
+including ``par_vec``. This adds another cavaet to the error-reporting behavior
+of parallel algorithms - it is not as straightforward as *"* ``sequential``
+*and* ``par`` *throw,* ``par_vec`` *doesn't throw"*.
+
+The exception handling behavior for ``par_vec`` makes it impossible to handle
+exceptions that occur in element access functions in a non-fatal fashion. The
+authors of this paper feel that this behavior may hamper the usability of the
+parallel algorithms library.
+
+The current behavior leads to a number of non-intuitive caveats when using
+parallel algorithms, complicates writing generic functions
+which use parallel algorithm and are templated on an ``ExecutionPolicy`` and
+adds complexity to the error-reporting guarantees of such generic functions,
+
+Consider the following function:
+
+.. code-block:: c++
+
+    template <class ExecutionPolicy, class It, class Compare, class Predicate>
+    It unique_sort(ExecutionPolicy&& policy, It first, It last, Compare comp, Predicate pred) noexcept
+    {
+        sort(policy, first, last, comp);
+        return unique(policy, first, last, pred); 
+    }
+
+..
+
+What can we tell users of ``unique_sort`` about its error-reporting behavior?
+The answer is not simple. If ``Compare`` or ``Predicate`` throw an exception,
+``unique_sort`` might throw an ``exception_list`` (or the underlying exception)
+or it might simply call ``terminate()``. And, it could always potentially throw
+``bad_alloc``.
+
+Now, suppose we have a second function, ``unique_sorted()``, which constructs and
+returns a unique, sorted ``vector<>`` from a range of inputs.
+
+.. code-block:: c++
+
+    template <class ExecutionPolicy, class It, class Compare, class Predicate>
+    vector<typename iterator_traits<It>::value_type>
+    unique_sorted(ExecutionPolicy&& policy, It first, It last, Compare comp, Predicate pred) noexcept
+    {
+        using vector = vector<typename iterator_traits<It>::value_type>;
+
+        try {
+            sort(policy, first, last, comp);
+            return vector(unique(policy, first, last, pred), last); 
+        } catch (...) {
+            return vector();
+        }
+    }
+
+..
+
+Our intention in the try-catch block should be clear - if an exception occurs,
+we catch it and return an empty ``vector<>`` (``vector<>``'s default
+constructor is ``noexcept``). However, if ``unique_sorted()`` is invoked with
+``par_vec``, any exception thrown by ``Compare`` or ``Predicate`` will lead
+to ``terminate()``, instead of the intended ``catch(...)`` block. 
+
+**TODO:** Discussion about throwing GPUs on 
+
+**TODO:** Proposed resolution.
+
+********************************************************************************
+Parallel Algorithms Should Always Throw exception_list or bad_alloc
+********************************************************************************
+
+If an element access function exits via an uncaught exception, a parallel
+algorithm invoked with ``sequential`` or ``par`` exit with either an
+``exception_list`` or, optionally, the uncaught exception if only one uncaught
+exception occurred. Allowing different implementations to throw different
+exception types may cause portability problems and force users to duplicate
+catch blocks.
+
+Implementations of parallel algorithms are not required to *"forge ahead"* in
+the face of exceptions. This relaxation gives implementations a great range of
+freedom in deciding whether to throw an ``exception_list`` or to simply throw
+the first uncaught exception from an element access function which is
+encountered.
+
+.. code-block:: c++
+
+    try {
+        for_each(policy, v.begin(), v.end(), my_function);
+    } catch (exception_list& el) {
+        // ...
+    } catch (my_exception& me) {
+        // ...
+    }
+
+..
+
+For the above code snippet, different ``catch()`` blocks could be taken by
+different implementations. If ``my_function`` always threw an exception for each
+element, an implementation that does not *"forge ahead"* would still be free to
+throw the underlying exception instead of an ``exception_list``.
+
+The authors suggest that parallel algorithms should *always* report uncaught
+exceptions from element access functions via ``exception_list``. 
+
+********************************************************************************
+Proposed Wording Changes
+********************************************************************************
+
+**TODO**
+
