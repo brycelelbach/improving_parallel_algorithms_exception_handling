@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.12: http://docutils.sourceforge.net/" />
+<title>P0333r0 : Improving the Specification of Exception Handling in the Parallel STL</title>
+<meta name="date" content="2016-05-15" />
+<meta name="author" content="Bryce Adelstein Lelbach" />
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7614 2013-02-21 15:55:51Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="p0333r0-improving-the-specification-of-exception-handling-in-the-parallel-stl">
+<h1 class="title">P0333r0 : Improving the Specification of Exception Handling in the Parallel STL</h1>
+<table class="docinfo" frame="void" rules="none">
+<col class="docinfo-name" />
+<col class="docinfo-content" />
+<tbody valign="top">
+<tr class="field"><th class="docinfo-name">Project:</th><td class="field-body">ISO JTC1/SC22/WG21: Programming Language C++</td>
+</tr>
+<tr class="field"><th class="docinfo-name">Number:</th><td class="field-body">P0333r0</td>
+</tr>
+<tr><th class="docinfo-name">Date:</th>
+<td>2016-05-15</td></tr>
+<tr class="field"><th class="docinfo-name">Reply-to:</th><td class="field-body"><a class="reference external" href="mailto:balelbach&#64;lbl.gov">balelbach&#64;lbl.gov</a></td>
+</tr>
+<tr><th class="docinfo-name">Author:</th>
+<td>Bryce Adelstein Lelbach</td></tr>
+<tr><th class="docinfo-name">Contact:</th>
+<td><a class="first last reference external" href="mailto:balelbach&#64;lbl.gov">balelbach&#64;lbl.gov</a></td></tr>
+<tr class="field"><th class="docinfo-name">Audience:</th><td class="field-body">Library Evolution Working Group (LEWG)</td>
+</tr>
+<tr class="field"><th class="docinfo-name">Audience:</th><td class="field-body">Study Group 1 - Concurrency (SG1)</td>
+</tr>
+<tr class="field"><th class="docinfo-name">Audience:</th><td class="field-body">Library Working Group (LWG)</td>
+</tr>
+<tr class="field"><th class="docinfo-name">URL:</th><td class="field-body"><a class="reference external" href="https://git.io/vrP22">https://git.io/vrP22</a></td>
+</tr>
+</tbody>
+</table>
+<style type="text/css">
+ins { text-decoration:none; font-weight:bold; background-color:#A0FFA0 }
+.new { text-decoration:none; font-weight:bold; background-color:#D0FFD0 }
+.rule { background-color:#FFFF40 }
+.ex { background-color: #D0FFF0 }
+del { text-decoration:line-through; background-color:#FFA0A0 }
+strong { font-weight: inherit; color: #2020ff }
+.hl { font-weight:bold; color: #ff0000 }
+code { background:none }
+</style><div class="section" id="overview">
+<h1>1&nbsp;&nbsp;&nbsp;Overview</h1>
+<p>The Parallelism Technical Specification (&lt;DOCUMENT NUMBER&gt;) introduced a
+parallel algorithms library based on the existing standard algorithms library.
+At the Feburary 2016 meeting in Jacksonville, the Parallelism TS was voted into
+the C++17 working draft.</p>
+<p>The authors of this paper have identified what we believe to be defects in the
+specification of the parallel algorithm exception handling (25.2.4,
+[algorithms.parallel.exceptions]).</p>
+</div>
+<div class="section" id="uncaught-element-access-function-exceptions-shouldn-t-lead-to-terminate">
+<h1>2&nbsp;&nbsp;&nbsp;Uncaught Element Access Function Exceptions Shouldn't Lead to terminate()</h1>
+<p>The exception handling behavior of parallel algorithms invoked with <tt class="docutils literal">par_vec</tt>
+(the <tt class="docutils literal">parallel_vector_execution_policy</tt>) is inconsistent with the exception
+handling behavior of the other two execution policies specified in the IS
+(<tt class="docutils literal">sequential</tt> AKA <tt class="docutils literal">sequential_execution_policy</tt> and <tt class="docutils literal">par</tt> AKA
+<tt class="docutils literal">parallel_execution_policy</tt>).</p>
+<p>25.2.4 [algorithms.parallel.exception] states that if element access function
+exits via an uncaught exception in an parallel algorithm invoked under the
+<tt class="docutils literal">par_vec</tt>, <tt class="docutils literal">terminate()</tt> will be called. This is inconsistent with the
+other two policies, which would exit by throwing either the uncaught exception,
+or an <tt class="docutils literal">exception_list</tt> containing (at least) the uncaught exception.</p>
+<p>Additionally, the parallel algorithms may throw <tt class="docutils literal">bad_alloc</tt> if they are
+unable to allocate the data structures needed to manage parallel execution -
+including <tt class="docutils literal">par_vec</tt>. This adds another cavaet to the error-reporting behavior
+of parallel algorithms - it is not as straightforward as <em>&quot;</em> <tt class="docutils literal">sequential</tt>
+<em>and</em> <tt class="docutils literal">par</tt> <em>throw,</em> <tt class="docutils literal">par_vec</tt> <em>doesn't throw&quot;</em>.</p>
+<p>The exception handling behavior for <tt class="docutils literal">par_vec</tt> makes it impossible to handle
+exceptions that occur in element access functions in a non-fatal fashion. The
+authors of this paper feel that this behavior may hamper the usability of the
+parallel algorithms library.</p>
+<p>The current behavior leads to a number of non-intuitive caveats when using
+parallel algorithms, complicates writing generic functions
+which use parallel algorithm and are templated on an <tt class="docutils literal">ExecutionPolicy</tt> and
+adds complexity to the error-reporting guarantees of such generic functions,</p>
+<p>Consider the following function:</p>
+<pre class="code c++ literal-block">
+<span class="keyword">template</span> <span class="operator">&lt;</span><span class="keyword">class</span> <span class="name class">ExecutionPolicy</span><span class="punctuation">,</span> <span class="keyword">class</span> <span class="name class">It</span><span class="punctuation">,</span> <span class="keyword">class</span> <span class="name class">Compare</span><span class="punctuation">,</span> <span class="keyword">class</span> <span class="name class">Predicate</span><span class="operator">&gt;</span>
+<span class="name">It</span> <span class="name">unique_sort</span><span class="punctuation">(</span><span class="name">ExecutionPolicy</span><span class="operator">&amp;&amp;</span> <span class="name">policy</span><span class="punctuation">,</span> <span class="name">It</span> <span class="name">first</span><span class="punctuation">,</span> <span class="name">It</span> <span class="name">last</span><span class="punctuation">,</span> <span class="name">Compare</span> <span class="name">comp</span><span class="punctuation">,</span> <span class="name">Predicate</span> <span class="name">pred</span><span class="punctuation">)</span> <span class="keyword">noexcept</span>
+<span class="punctuation">{</span>
+    <span class="name">sort</span><span class="punctuation">(</span><span class="name">policy</span><span class="punctuation">,</span> <span class="name">first</span><span class="punctuation">,</span> <span class="name">last</span><span class="punctuation">,</span> <span class="name">comp</span><span class="punctuation">);</span>
+    <span class="keyword">return</span> <span class="name function">unique</span><span class="punctuation">(</span><span class="name">policy</span><span class="punctuation">,</span> <span class="name">first</span><span class="punctuation">,</span> <span class="name">last</span><span class="punctuation">,</span> <span class="name">pred</span><span class="punctuation">);</span>
+<span class="punctuation">}</span>
+</pre>
+<!--  -->
+<p>What can we tell users of <tt class="docutils literal">unique_sort</tt> about its error-reporting behavior?
+The answer is not simple. If <tt class="docutils literal">Compare</tt> or <tt class="docutils literal">Predicate</tt> throw an exception,
+<tt class="docutils literal">unique_sort</tt> might throw an <tt class="docutils literal">exception_list</tt> (or the underlying exception)
+or it might simply call <tt class="docutils literal">terminate()</tt>. And, it could always potentially throw
+<tt class="docutils literal">bad_alloc</tt>.</p>
+<p>Now, suppose we have a second function, <tt class="docutils literal">unique_sorted()</tt>, which constructs and
+returns a unique, sorted <tt class="docutils literal">vector&lt;&gt;</tt> from a range of inputs.</p>
+<pre class="code c++ literal-block">
+<span class="keyword">template</span> <span class="operator">&lt;</span><span class="keyword">class</span> <span class="name class">ExecutionPolicy</span><span class="punctuation">,</span> <span class="keyword">class</span> <span class="name class">It</span><span class="punctuation">,</span> <span class="keyword">class</span> <span class="name class">Compare</span><span class="punctuation">,</span> <span class="keyword">class</span> <span class="name class">Predicate</span><span class="operator">&gt;</span>
+<span class="name">vector</span><span class="operator">&lt;</span><span class="keyword">typename</span> <span class="name">iterator_traits</span><span class="operator">&lt;</span><span class="name">It</span><span class="operator">&gt;::</span><span class="name">value_type</span><span class="operator">&gt;</span>
+<span class="name">unique_sorted</span><span class="punctuation">(</span><span class="name">ExecutionPolicy</span><span class="operator">&amp;&amp;</span> <span class="name">policy</span><span class="punctuation">,</span> <span class="name">It</span> <span class="name">first</span><span class="punctuation">,</span> <span class="name">It</span> <span class="name">last</span><span class="punctuation">,</span> <span class="name">Compare</span> <span class="name">comp</span><span class="punctuation">,</span> <span class="name">Predicate</span> <span class="name">pred</span><span class="punctuation">)</span> <span class="keyword">noexcept</span>
+<span class="punctuation">{</span>
+    <span class="keyword">using</span> <span class="name">vector</span> <span class="operator">=</span> <span class="name">vector</span><span class="operator">&lt;</span><span class="keyword">typename</span> <span class="name">iterator_traits</span><span class="operator">&lt;</span><span class="name">It</span><span class="operator">&gt;::</span><span class="name">value_type</span><span class="operator">&gt;</span><span class="punctuation">;</span>
+
+    <span class="keyword">try</span> <span class="punctuation">{</span>
+        <span class="name">sort</span><span class="punctuation">(</span><span class="name">policy</span><span class="punctuation">,</span> <span class="name">first</span><span class="punctuation">,</span> <span class="name">last</span><span class="punctuation">,</span> <span class="name">comp</span><span class="punctuation">);</span>
+        <span class="keyword">return</span> <span class="name function">vector</span><span class="punctuation">(</span><span class="name">unique</span><span class="punctuation">(</span><span class="name">policy</span><span class="punctuation">,</span> <span class="name">first</span><span class="punctuation">,</span> <span class="name">last</span><span class="punctuation">,</span> <span class="name">pred</span><span class="punctuation">),</span> <span class="name">last</span><span class="punctuation">);</span>
+    <span class="punctuation">}</span> <span class="keyword">catch</span> <span class="punctuation">(...)</span> <span class="punctuation">{</span>
+        <span class="keyword">return</span> <span class="name">vector</span><span class="punctuation">();</span>
+    <span class="punctuation">}</span>
+<span class="punctuation">}</span>
+</pre>
+<!--  -->
+<p>Our intention in the try-catch block should be clear - if an exception occurs,
+we catch it and return an empty <tt class="docutils literal">vector&lt;&gt;</tt> (<tt class="docutils literal">vector&lt;&gt;</tt>'s default
+constructor is <tt class="docutils literal">noexcept</tt>). However, if <tt class="docutils literal">unique_sorted()</tt> is invoked with
+<tt class="docutils literal">par_vec</tt>, any exception thrown by <tt class="docutils literal">Compare</tt> or <tt class="docutils literal">Predicate</tt> will lead
+to <tt class="docutils literal">terminate()</tt>, instead of the intended <tt class="docutils literal"><span class="pre">catch(...)</span></tt> block.</p>
+<p>The current behavior of <tt class="docutils literal">par_vec</tt> may also lead to non-intuitive resource leaks.
+Consider the following code, which utilizes a shared-memory mutex via Boost.Interprocess:</p>
+<pre class="code c++ literal-block">
+<span class="keyword">namespace</span> <span class="name">ipc</span> <span class="operator">=</span> <span class="name">boost</span><span class="operator">::</span><span class="name">interprocess</span><span class="punctuation">;</span>
+
+<span class="name">ipc</span><span class="operator">::</span><span class="name">named_mutex</span> <span class="name">mutex</span><span class="punctuation">(</span><span class="name">ipc</span><span class="operator">::</span><span class="name">open_or_create</span><span class="punctuation">,</span> <span class="literal string">&quot;my_mutex&quot;</span><span class="punctuation">);</span>
+
+<span class="name">ipc</span><span class="operator">::</span><span class="name">scoped_lock</span><span class="operator">&lt;</span><span class="name">ipc</span><span class="operator">::</span><span class="name">named_mutex</span><span class="operator">&gt;</span> <span class="name">lock</span><span class="punctuation">(</span><span class="name">mutex</span><span class="punctuation">);</span>
+
+<span class="name">vector</span><span class="operator">&lt;</span><span class="keyword type">double</span><span class="operator">&gt;</span> <span class="name">d</span> <span class="operator">=</span> <span class="comment single">// ...
+</span>
+<span class="keyword">try</span> <span class="punctuation">{</span>
+    <span class="name">for_each</span><span class="punctuation">(</span><span class="name">par_vec</span><span class="punctuation">,</span> <span class="name">d</span><span class="punctuation">.</span><span class="name">begin</span><span class="punctuation">(),</span> <span class="name">d</span><span class="punctuation">.</span><span class="name">end</span><span class="punctuation">(),</span> <span class="name">my_function</span><span class="punctuation">);</span>
+<span class="punctuation">}</span> <span class="keyword">catch</span> <span class="punctuation">(</span><span class="name">my_exception</span><span class="operator">&amp;</span> <span class="name">me</span><span class="punctuation">)</span> <span class="punctuation">{</span>
+    <span class="comment single">// ...
+</span><span class="punctuation">}</span>
+</pre>
+<!--  -->
+<p>If <tt class="docutils literal">my_function</tt> throws <tt class="docutils literal">my_exception</tt> in the above code, <tt class="docutils literal">terminate()</tt>
+will be called and the program will exit without invoking
+<tt class="docutils literal"><span class="pre">ipc::scoped_lock&lt;&gt;</span></tt> destructor, which will leave the shared-memory mutex in
+a locked state and cause a deadlock the next time this program is run.</p>
+<p><strong>TODO:</strong> Discussion about throwing exceptions on GPUs.</p>
+<p><strong>TODO:</strong> Proposed resolution.</p>
+</div>
+<div class="section" id="parallel-algorithms-should-always-throw-exception-list-or-bad-alloc">
+<h1>3&nbsp;&nbsp;&nbsp;Parallel Algorithms Should Always Throw exception_list or bad_alloc</h1>
+<p>If an element access function exits via an uncaught exception, a parallel
+algorithm invoked with <tt class="docutils literal">sequential</tt> or <tt class="docutils literal">par</tt> exit with either an
+<tt class="docutils literal">exception_list</tt> or, optionally, the uncaught exception if only one uncaught
+exception occurred. Allowing different implementations to throw different
+exception types may cause portability problems and force users to duplicate
+catch blocks.</p>
+<p>Implementations of parallel algorithms are not required to <em>&quot;forge ahead&quot;</em> in
+the face of exceptions. This relaxation gives implementations a great range of
+freedom in deciding whether to throw an <tt class="docutils literal">exception_list</tt> or to simply throw
+the first uncaught exception from an element access function which is
+encountered.</p>
+<pre class="code c++ literal-block">
+<span class="keyword">try</span> <span class="punctuation">{</span>
+    <span class="name">for_each</span><span class="punctuation">(</span><span class="name">par</span><span class="punctuation">,</span> <span class="name">d</span><span class="punctuation">.</span><span class="name">begin</span><span class="punctuation">(),</span> <span class="name">d</span><span class="punctuation">.</span><span class="name">end</span><span class="punctuation">(),</span> <span class="name">my_function</span><span class="punctuation">);</span>
+<span class="punctuation">}</span> <span class="keyword">catch</span> <span class="punctuation">(</span><span class="name">exception_list</span><span class="operator">&amp;</span> <span class="name">el</span><span class="punctuation">)</span> <span class="punctuation">{</span>
+    <span class="comment single">// ...
+</span><span class="punctuation">}</span> <span class="keyword">catch</span> <span class="punctuation">(</span><span class="name">my_exception</span><span class="operator">&amp;</span> <span class="name">me</span><span class="punctuation">)</span> <span class="punctuation">{</span>
+    <span class="comment single">// ...
+</span><span class="punctuation">}</span>
+</pre>
+<!--  -->
+<p>For the above code snippet, different <tt class="docutils literal">catch()</tt> blocks could be taken by
+different implementations. If <tt class="docutils literal">my_function</tt> always threw an exception for each
+element, an implementation that does not <em>&quot;forge ahead&quot;</em> would still be free to
+throw the underlying exception instead of an <tt class="docutils literal">exception_list</tt>.</p>
+<p>The authors suggest that parallel algorithms should <em>always</em> report uncaught
+exceptions from element access functions via <tt class="docutils literal">exception_list</tt>.</p>
+</div>
+<div class="section" id="proposed-wording-changes">
+<h1>4&nbsp;&nbsp;&nbsp;Proposed Wording Changes</h1>
+<p>Apply the following changes to 25.2.4 [algorithms.parallel.exceptions]
+paragraph 2:</p>
+<blockquote>
+
+During the execution of a parallel algorithm, if the invocation of an element
+access function exits via an uncaught exception, the behavior of the program
+is determined by the type of execution policy used to invoke the algorithm:
+
+<ul>
+    <li>
+        <del>If the execution policy object is of type
+        <code>parallel_vector_execution_policy</code>,
+        <code>terminate()</code> is called.</del>
+    </li>
+    <li>
+        If the execution policy object is of type
+        <code>sequential_execution_policy</code><ins>,</ins> <del>or</del>
+        <code>parallel_excecution_policy</code> <ins>or
+        <code>parallel_vector_execution_policy</code></ins>, the execution
+        of the algorithm exits via an exception. The exception will be an
+        <code>exception_list</code> containing all uncaught exceptions
+        thrown during the invocations of element access functions<ins>.</ins>
+        <del>, or optionally the uncaught exception if there was only one.
+        [<em>Note:</em> For example, when <code>for_each</code> is executed
+        sequentially, if an invocation of the user-provided function object
+        throws an exception, <code>for_each</code> can exit via the
+        uncaught exception, or throw an <code>exception_list</code>
+        containing the original exception exception. - <em>end note</em>]</del>
+        [<em>Note:</em> These gurantees imply that, unless the algorithm
+        has failed to allocate memory and exits via <code>bad_alloc</code>,
+        all exceptions thrown during the execution of the algorithm are
+        communicated to the caller. It is unspecified whether an algorithm
+        implementation will "forge ahead" after encountering and capturing
+        a user exception. - <em>end note</em>]
+        [<em>Note:</em> The algorithm may exit via the
+        <code>bad_alloc</code> exception even if one or more user-provided
+        function objects have exited via an exception. For example, this
+        can happen when an algorithm fails to allocate memory while
+        creating or adding elements to the <code>exception_list</code>
+        object. - <em>end note</em>]
+    </li>
+    <li>
+        If the execution policy object is of any other type, the behavior
+        is implementation-defined.
+    </li>
+</ul>
+
+</blockquote></div>
+</div>
+</body>
+</html>
