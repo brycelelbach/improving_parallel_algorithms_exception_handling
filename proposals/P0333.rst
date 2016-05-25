@@ -12,7 +12,7 @@
     </style>
 
 ================================================================================
-P0333r0 : Improving the Specification of Exception Handling in the Parallel STL 
+P0333r0 : Improving Parallel Algorithm Exception Handling 
 ================================================================================
 
 :Project: ISO JTC1/SC22/WG21: Programming Language C++
