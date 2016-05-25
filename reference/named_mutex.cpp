@@ -5,7 +5,7 @@
 #include <cstdio>
 
 using std::vector;
-using std::sort;
+using std::for_each;
 
 int main()
 {
@@ -17,8 +17,10 @@ int main()
 
     vector<double> d = // ...
 
-    sort(par_vec, d.begin(), d.end(), my_comp);
-
-    // ...
+    try {
+        for_each(par_vec, d.begin(), d.end(), my_function);
+    } catch (my_exception& me) {
+        // ...
+    }
 }
 

@@ -1,3 +1,16 @@
+.. raw:: html
+
+    <style type="text/css">
+    ins { text-decoration:none; font-weight:bold; background-color:#A0FFA0 }
+    .new { text-decoration:none; font-weight:bold; background-color:#D0FFD0 }
+    .rule { background-color:#FFFF40 }
+    .ex { background-color: #D0FFF0 }
+    del { text-decoration:line-through; background-color:#FFA0A0 }  
+    strong { font-weight: inherit; color: #2020ff }
+    .hl { font-weight:bold; color: #ff0000 }
+    code { background:none }
+    </style>
+
 ================================================================================
 P0333r0 : Improving the Specification of Exception Handling in the Parallel STL 
 ================================================================================
@@ -11,7 +24,7 @@ P0333r0 : Improving the Specification of Exception Handling in the Parallel STL
 :Audience: Library Evolution Working Group (LEWG)
 :Audience: Study Group 1 - Concurrency (SG1)
 :Audience: Library Working Group (LWG) 
-:URL: https://github.com/brycelelbach/wg21_p0333_improving_parallel_algorithms_exception_handling/blob/master/proposals/P0333.rst
+:URL: https://git.io/vrP22 
 
 .. sectnum::
 
@@ -106,7 +119,33 @@ constructor is ``noexcept``). However, if ``unique_sorted()`` is invoked with
 ``par_vec``, any exception thrown by ``Compare`` or ``Predicate`` will lead
 to ``terminate()``, instead of the intended ``catch(...)`` block. 
 
-**TODO:** Discussion about throwing GPUs on 
+The current behavior of ``par_vec`` may also lead to non-intuitive resource leaks.
+Consider the following code, which utilizes a shared-memory mutex via Boost.Interprocess:
+
+.. code-block:: c++
+
+    namespace ipc = boost::interprocess;
+
+    ipc::named_mutex mutex(ipc::open_or_create, "my_mutex");
+
+    ipc::scoped_lock<ipc::named_mutex> lock(mutex);
+
+    vector<double> d = // ...
+
+    try {
+        for_each(par_vec, d.begin(), d.end(), my_function);
+    } catch (my_exception& me) {
+        // ...
+    }
+
+..
+
+If ``my_function`` throws ``my_exception`` in the above code, ``terminate()``
+will be called and the program will exit without invoking
+``ipc::scoped_lock<>`` destructor, which will leave the shared-memory mutex in
+a locked state and cause a deadlock the next time this program is run. 
+
+**TODO:** Discussion about throwing exceptions on GPUs.
 
 **TODO:** Proposed resolution.
 
@@ -130,7 +169,7 @@ encountered.
 .. code-block:: c++
 
     try {
-        for_each(policy, v.begin(), v.end(), my_function);
+        for_each(par, d.begin(), d.end(), my_function);
     } catch (exception_list& el) {
         // ...
     } catch (my_exception& me) {
@@ -151,5 +190,55 @@ exceptions from element access functions via ``exception_list``.
 Proposed Wording Changes
 ********************************************************************************
 
-**TODO**
+Apply the following changes to 25.2.4 [algorithms.parallel.exceptions]
+paragraph 2:
+
+.. raw:: html
+
+    <blockquote>
+
+    During the execution of a parallel algorithm, if the invocation of an element
+    access function exits via an uncaught exception, the behavior of the program
+    is determined by the type of execution policy used to invoke the algorithm:
+
+    <ul>
+        <li>
+            <del>If the execution policy object is of type
+            <code>parallel_vector_execution_policy</code>,
+            <code>terminate()</code> is called.</del>
+        </li>
+        <li>
+            If the execution policy object is of type
+            <code>sequential_execution_policy</code><ins>,</ins> <del>or</del> 
+            <code>parallel_excecution_policy</code> <ins>or
+            <code>parallel_vector_execution_policy</code></ins>, the execution
+            of the algorithm exits via an exception. The exception will be an
+            <code>exception_list</code> containing all uncaught exceptions
+            thrown during the invocations of element access functions<ins>.</ins>
+            <del>, or optionally the uncaught exception if there was only one.
+            [<em>Note:</em> For example, when <code>for_each</code> is executed
+            sequentially, if an invocation of the user-provided function object
+            throws an exception, <code>for_each</code> can exit via the
+            uncaught exception, or throw an <code>exception_list</code>
+            containing the original exception exception. - <em>end note</em>]</del>
+            [<em>Note:</em> These gurantees imply that, unless the algorithm
+            has failed to allocate memory and exits via <code>bad_alloc</code>,
+            all exceptions thrown during the execution of the algorithm are
+            communicated to the caller. It is unspecified whether an algorithm
+            implementation will "forge ahead" after encountering and capturing
+            a user exception. - <em>end note</em>]
+            [<em>Note:</em> The algorithm may exit via the
+            <code>bad_alloc</code> exception even if one or more user-provided
+            function objects have exited via an exception. For example, this 
+            can happen when an algorithm fails to allocate memory while
+            creating or adding elements to the <code>exception_list</code>
+            object. - <em>end note</em>]
+        </li>
+        <li>
+            If the execution policy object is of any other type, the behavior
+            is implementation-defined.
+        </li>
+    </ul>
+
+    </blockquote>
 
