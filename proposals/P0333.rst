@@ -24,7 +24,7 @@ P0333r0 : Improving Parallel Algorithm Exception Handling
 :Audience: Library Evolution Working Group (LEWG)
 :Audience: Study Group 1 - Concurrency (SG1)
 :Audience: Library Working Group (LWG) 
-:URL: https://git.io/vrP22 
+:URL: https://git.io/vrXCS
 
 .. sectnum::
 
@@ -32,7 +32,7 @@ P0333r0 : Improving Parallel Algorithm Exception Handling
 Overview
 ********************************************************************************
 
-The Parallelism Technical Specification (<DOCUMENT NUMBER>) introduced a
+The Parallelism Technical Specification (ISO/IEC TS 19570:2015) introduced a
 parallel algorithms library based on the existing standard algorithms library.
 At the Feburary 2016 meeting in Jacksonville, the Parallelism TS was voted into
 the C++17 working draft. 
