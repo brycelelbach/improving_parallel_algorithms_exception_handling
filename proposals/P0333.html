@@ -383,7 +383,7 @@ code { background:none }
 parallel algorithms library based on the existing standard algorithms library.
 At the Feburary 2016 meeting in Jacksonville, the Parallelism TS was voted into
 the C++17 working draft.</p>
-<p>The authors of this paper have identified what we believe to be defects in the
+<p>The author of this paper has identified what he believes to be defects in the
 specification of the parallel algorithm exception handling (25.2.4,
 [algorithms.parallel.exceptions]).</p>
 </div>
@@ -406,7 +406,7 @@ of parallel algorithms - it is not as straightforward as <em>&quot;</em> <tt cla
 <em>and</em> <tt class="docutils literal">par</tt> <em>throw,</em> <tt class="docutils literal">par_vec</tt> <em>doesn't throw&quot;</em>.</p>
 <p>The exception handling behavior for <tt class="docutils literal">par_vec</tt> makes it impossible to handle
 exceptions that occur in element access functions in a non-fatal fashion. The
-authors of this paper feel that this behavior may hamper the usability of the
+author of this paper feels that this behavior may hamper the usability of the
 parallel algorithms library.</p>
 <p>The current behavior leads to a number of non-intuitive caveats when using
 parallel algorithms, complicates writing generic functions
@@ -472,8 +472,21 @@ Consider the following code, which utilizes a shared-memory mutex via Boost.Inte
 will be called and the program will exit without invoking
 <tt class="docutils literal"><span class="pre">ipc::scoped_lock&lt;&gt;</span></tt> destructor, which will leave the shared-memory mutex in
 a locked state and cause a deadlock the next time this program is run.</p>
-<p><strong>TODO:</strong> Discussion about throwing exceptions on GPUs.</p>
-<p><strong>TODO:</strong> Proposed resolution.</p>
+<p>Requiring <tt class="docutils literal">par_vec</tt> to use the same exception-handling behavior as <tt class="docutils literal">sequential</tt>
+and <tt class="docutils literal">par</tt> may have one down-side. It could potentially limit the type of hardware
+resources that could be used to parallelize the execution of algorithms invoked with
+<tt class="docutils literal">par_vec</tt> (some GPU platforms may have this limitation). In particular, some
+theoretical platform may not have a mechanism for performing stack unwinding (or, the
+mechanism may be quite slow). But, how would such a platform handle an
+exception which is thrown and caught <em>within</em> an element access function? If the
+platform can handle such exceptions in a conforming manner, then it should also
+be possible for that platform to support the exception-handling behavior of <tt class="docutils literal">sequential</tt>
+and <tt class="docutils literal">par</tt>. If the platform cannot handle such exceptions, then the current wording
+of <tt class="docutils literal">par_vec</tt> is not a sufficient solution - it would be necessary to require that
+all element access functions used in <tt class="docutils literal">par_vec</tt> invocations be <tt class="docutils literal">noexcept</tt>.</p>
+<p>The author believes the exception handling behavior of <tt class="docutils literal">par_vec</tt> should be
+changed to be identical to the exception handling behavior of <tt class="docutils literal">sequential</tt>
+and <tt class="docutils literal">par</tt>.</p>
 </div>
 <div class="section" id="parallel-algorithms-should-always-throw-exception-list-or-bad-alloc">
 <h1>3&nbsp;&nbsp;&nbsp;Parallel Algorithms Should Always Throw exception_list or bad_alloc</h1>
@@ -502,7 +515,7 @@ encountered.</p>
 different implementations. If <tt class="docutils literal">my_function</tt> always threw an exception for each
 element, an implementation that does not <em>&quot;forge ahead&quot;</em> would still be free to
 throw the underlying exception instead of an <tt class="docutils literal">exception_list</tt>.</p>
-<p>The authors suggest that parallel algorithms should <em>always</em> report uncaught
+<p>The author suggest that parallel algorithms should <em>always</em> report uncaught
 exceptions from element access functions via <tt class="docutils literal">exception_list</tt>.</p>
 </div>
 <div class="section" id="proposed-wording-changes">

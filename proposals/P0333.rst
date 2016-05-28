@@ -37,7 +37,7 @@ parallel algorithms library based on the existing standard algorithms library.
 At the Feburary 2016 meeting in Jacksonville, the Parallelism TS was voted into
 the C++17 working draft. 
 
-The authors of this paper have identified what we believe to be defects in the
+The author of this paper has identified what he believes to be defects in the
 specification of the parallel algorithm exception handling (25.2.4,
 [algorithms.parallel.exceptions]). 
 
@@ -65,7 +65,7 @@ of parallel algorithms - it is not as straightforward as *"* ``sequential``
 
 The exception handling behavior for ``par_vec`` makes it impossible to handle
 exceptions that occur in element access functions in a non-fatal fashion. The
-authors of this paper feel that this behavior may hamper the usability of the
+author of this paper feels that this behavior may hamper the usability of the
 parallel algorithms library.
 
 The current behavior leads to a number of non-intuitive caveats when using
@@ -145,9 +145,22 @@ will be called and the program will exit without invoking
 ``ipc::scoped_lock<>`` destructor, which will leave the shared-memory mutex in
 a locked state and cause a deadlock the next time this program is run. 
 
-**TODO:** Discussion about throwing exceptions on GPUs.
+Requiring ``par_vec`` to use the same exception-handling behavior as ``sequential``
+and ``par`` may have one down-side. It could potentially limit the type of hardware
+resources that could be used to parallelize the execution of algorithms invoked with
+``par_vec`` (some GPU platforms may have this limitation). In particular, some
+theoretical platform may not have a mechanism for performing stack unwinding (or, the
+mechanism may be quite slow). But, how would such a platform handle an
+exception which is thrown and caught *within* an element access function? If the
+platform can handle such exceptions in a conforming manner, then it should also
+be possible for that platform to support the exception-handling behavior of ``sequential``
+and ``par``. If the platform cannot handle such exceptions, then the current wording
+of ``par_vec`` is not a sufficient solution - it would be necessary to require that
+all element access functions used in ``par_vec`` invocations be ``noexcept``.
 
-**TODO:** Proposed resolution.
+The author believes the exception handling behavior of ``par_vec`` should be
+changed to be identical to the exception handling behavior of ``sequential``
+and ``par``.
 
 ********************************************************************************
 Parallel Algorithms Should Always Throw exception_list or bad_alloc
@@ -183,7 +196,7 @@ different implementations. If ``my_function`` always threw an exception for each
 element, an implementation that does not *"forge ahead"* would still be free to
 throw the underlying exception instead of an ``exception_list``.
 
-The authors suggest that parallel algorithms should *always* report uncaught
+The author suggest that parallel algorithms should *always* report uncaught
 exceptions from element access functions via ``exception_list``. 
 
 ********************************************************************************
