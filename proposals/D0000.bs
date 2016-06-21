@@ -32,13 +32,7 @@ Removing the need for <code highlight="c++">exception_list</code> solves outstan
 
 <a href="http://wg21.link/D0322r1">D0322r1 exception_list</a> proposed a possible design for a user-constructible <code highlight="c++">exception_list</code>. Designing this <code highlight="c++">exception_list</code>, however, would be a difficult task. <code highlight="c++">exception_list</code> is an exception, and in a parallel context it could potentially be caught in multiple threads concurrently. Thus, any <code highlight="c++">exception_list</code> design would need to be thread-safe. To ensure thread-safety and to maintain consistency with all other standard exceptions, the authors of D0322r1 felt it was necessary for <code highlight="c++">exception_list</code> to be immutable. The standard library does not currently have immutable containers; <code highlight="c++">exception_list</code> would be the first, and thus would be exploring an entirely new design space. At Oulu, the authors of D0322r1 and LEWG felt that there was not sufficient time before C++17 to decide on a design for immutable containers in the standard library. By removing the need for <code highlight="c++">exception_list</code>, it is not necessary for it to be fixed in time for C++17.
 
-Further issues with <code highlight="c++">exception_list</code> include:
-
-* The order in which <code highlight="c++">exception_list</code> is populated, since the algorithms are concurrent and/or parallel.
-* Whether implementations forge ahead or abort early.
-* How users are expected to iterate through <code highlight="c++">exception_list</code>.
-* Whether nested <code highlight="c++">exception_list</code> are allowed.
-* Which NTBS content is expected in <code highlight="c++">.what()</code> considering that <code highlight="c++">exception_list</code> is generated at runtime and <code highlight="c++">.what()</code> cannot allocate (should the NTSB be constructed optimistically at <code highlight="c++">exception_list</code> construction time, or should it be permanently useless?).
+Paragraph about processing exception_list, whether you can actually get useful information out of it (unordered!), 10million exceptions example, issues with .what() from exception_list.
 
 Proposed Wording Change {#prop}
 ===============================
@@ -60,16 +54,16 @@ paragraph 2:
 
 <blockquote>
 During the execution of a parallel algorithm, if the invocation of an element
-access function exits via an uncaught exception, the behavior of the program
-is determined by the type of execution policy used to invoke the algorithm:
+access function exits via an uncaught exception, <ins><code>terminate()</code> is called.</ins>
+<del>the behavior of the program
+is determined by the type of execution policy used to invoke the algorithm:</del>
 
 <ul>
-    <li>
+    <li><del>
         If the execution policy object is of type
         <code>parallel_vector_execution_policy</code>,
-        <ins><code>sequential_execution_policy</code>, or <code>parallel_excecution_policy</code>,</ins>
         <code>terminate()</code> is called.
-    </li>
+    </del></li>
     <li><del>
         If the execution policy object is of type
         <code>sequential_execution_policy</code> or
@@ -96,10 +90,10 @@ is determined by the type of execution policy used to invoke the algorithm:
         creating or adding elements to the <code>exception_list</code>
         object. - <em>end note</em>]
     </del></li>
-    <li>
+    <li><del>
         If the execution policy object is of any other type, the behavior
         is implementation-defined.
-    </li>
+    </del></li>
 </ul>
 </blockquote>
 
