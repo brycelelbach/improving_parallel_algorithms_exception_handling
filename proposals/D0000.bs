@@ -1,0 +1,99 @@
+<pre class='metadata'>
+Group: isowg21
+Title: terminate() for Parallel Algorithm Exception Handling
+Shortname: D0000
+Revision: 0
+Audience: SG1
+Reply-To: jfb@google.com, balelbach@lbl.gov
+Editor: JF Bastien, Google, jfb@google.com
+Editor: Bryce Adelstein Lelbach, Berkeley Lab, balelbach@lbl.gov
+Date: 2016-06-21
+</pre>
+
+Background {#bg}
+================
+
+<a href="http://wg21.link/P0333r0">P0333r0 Improving Parallel Algorithm Exception Handling</a> states:
+
+<blockquote>
+The exception handling behavior of parallel algorithms invoked with <code highlight="c++">par_vec</code> (the <code highlight="c++">parallel_vector_execution_policy</code>) is inconsistent with the exception handling behavior of the other two execution policies specified in the IS (sequential AKA <code highlight="c++">sequential_execution_policy</code> and par AKA <code highlight="c++">parallel_execution_policy</code>).
+
+25.2.4 [algorithms.parallel.exception] states that if element access function exits via an uncaught exception in an parallel algorithm invoked under the <code highlight="c++">par_vec</code>, <code highlight="c++">terminate()</code> will be called. This is inconsistent with the other two policies, which would exit by throwing either the uncaught exception, or an <code highlight="c++">exception_list</code> containing (at least) the uncaught exception.
+</blockquote>
+
+SG1 Feedback {#fb}
+==================
+
+P0333r0 proposes to address this problem by allowing <code highlight="c++">par_vec</code> element access functions to throw exceptions. SG1’s discussion in Oulu concludes that throwing exceptions pessimizes code which cannot be proven to not throw exceptions, e.g. when invoking opaque functions which aren’t marked as <code highlight="c++">noexcept</code>. Invoking <code highlight="c++">terminate()</code> greatly simplifies code generation.
+
+The inconsistency between different parallel algorithms is still problematic. We therefore propose to fix the inconsistency by making all parallel algorithms invoke <code highlight="c++">terminate()</code> if element access functions exit via an uncaught exception. This has the added benefit of removing the need for <code highlight="c++">exception_list</code>, leaving parallel algorithm’s capability to throw <code highlight="c++">bad_alloc</code> but no other exception type.
+
+Removing the need for <code highlight="c++">exception_list</code> solves outstanding design concerns with <code highlight="c++">exception_list</code> which were raised at Jacksonville during the <a href="http://wiki.edg.com/bin/view/Wg21jacksonville/P0024">discussion of P0024 The Parallelism TS Should be Standardized</a>. Specifically, there was concern about having an <code highlight="c++">exception_list</code> which was not constructible by users. The consensus in LEWG was to give <code highlight="c++">exception_list</code> user-accessible constructors and mutators for C++17.
+
+<a href="http://wg21.link/D0322r1">D0322r1 exception_list</a> proposed a possible design for a user-constructible <code highlight="c++">exception_list</code>. Designing this <code highlight="c++">exception_list</code>, however, would be a difficult task. <code highlight="c++">exception_list</code> is an exception, and in a parallel context it could potentially be caught in multiple threads concurrently. Thus, any <code highlight="c++">exception_list</code> design would need to be thread-safe. To ensure thread-safety and to maintain consistency with all other standard exceptions, the authors of D0322r1 felt it was necessary for <code highlight="c++">exception_list</code> to be immutable. The standard library does not currently have immutable containers; <code highlight="c++">exception_list</code> would be the first, and thus would be exploring an entirely new design space. At Oulu, the authors of D0322r1 and LEWG felt that there was not sufficient time before C++17 to decide on a design for immutable containers in the standard library. By removing the need for <code highlight="c++">exception_list</code>, it is not necessary for it to be fixed in time for C++17.
+
+Paragraph about processing exception_list, whether you can actually get useful information out of it (unordered!), 10million exceptions example, issues with .what() from exception_list.
+
+Proposed Wording Change {#prop}
+===============================
+
+Apply the following changes to 17.6.1.2 [headers] paragraph 2:
+
+<blockquote>
+The C++ standard library provides <ins>60</ins><del>61</del> C++ library headers, as shown in Table 14.
+</blockquote>
+
+In 17.6.1.2 [headers], delete <code>&lt;exception_list&gt;</code> from Table 14.
+
+In 18.1 [support.general], delete the row for exception lists from Table 29.
+
+Delete 18.8.8 [support.exception.list]. 
+
+Apply the following changes to 25.2.4 [algorithms.parallel.exceptions]
+paragraph 2:
+
+<blockquote>
+During the execution of a parallel algorithm, if the invocation of an element
+access function exits via an uncaught exception, the behavior of the program
+is determined by the type of execution policy used to invoke the algorithm:
+
+<ul>
+    <li>
+        If the execution policy object is of type
+        <code>parallel_vector_execution_policy</code>,
+        <ins><code>sequential_execution_policy</code>, or <code>parallel_excecution_policy</code>,</ins>
+        <code>terminate()</code> is called.
+    </li>
+    <li><del>
+        If the execution policy object is of type
+        <code>sequential_execution_policy</code> or
+        <code>parallel_excecution_policy</code>, the execution
+        of the algorithm exits via an exception. The exception will be an
+        <code>exception_list</code> containing all uncaught exceptions
+        thrown during the invocations of element access functions, or optionally
+        the uncaught exception if there was only one.
+        [<em>Note:</em> For example, when <code>for_each</code> is executed
+        sequentially, if an invocation of the user-provided function object
+        throws an exception, <code>for_each</code> can exit via the
+        uncaught exception, or throw an <code>exception_list</code>
+        containing the original exception exception. - <em>end note</em>]
+        [<em>Note:</em> These gurantees imply that, unless the algorithm
+        has failed to allocate memory and exits via <code>bad_alloc</code>,
+        all exceptions thrown during the execution of the algorithm are
+        communicated to the caller. It is unspecified whether an algorithm
+        implementation will "forge ahead" after encountering and capturing
+        a user exception. - <em>end note</em>]
+        [<em>Note:</em> The algorithm may exit via the
+        <code>bad_alloc</code> exception even if one or more user-provided
+        function objects have exited via an exception. For example, this 
+        can happen when an algorithm fails to allocate memory while
+        creating or adding elements to the <code>exception_list</code>
+        object. - <em>end note</em>]
+    </del></li>
+    <li>
+        If the execution policy object is of any other type, the behavior
+        is implementation-defined.
+    </li>
+</ul>
+</blockquote>
+
