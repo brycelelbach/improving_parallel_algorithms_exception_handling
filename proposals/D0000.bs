@@ -60,16 +60,16 @@ paragraph 2:
 
 <blockquote>
 During the execution of a parallel algorithm, if the invocation of an element
-access function exits via an uncaught exception, the behavior of the program
-is determined by the type of execution policy used to invoke the algorithm:
+access function exits via an uncaught exception, <ins><code>terminate()</code> is called.</ins>
+<del>the behavior of the program
+is determined by the type of execution policy used to invoke the algorithm:</del>
 
 <ul>
-    <li>
+    <li><del>
         If the execution policy object is of type
         <code>parallel_vector_execution_policy</code>,
-        <ins><code>sequential_execution_policy</code>, or <code>parallel_excecution_policy</code>,</ins>
         <code>terminate()</code> is called.
-    </li>
+    </del></li>
     <li><del>
         If the execution policy object is of type
         <code>sequential_execution_policy</code> or
@@ -96,10 +96,10 @@ is determined by the type of execution policy used to invoke the algorithm:
         creating or adding elements to the <code>exception_list</code>
         object. - <em>end note</em>]
     </del></li>
-    <li>
+    <li><del>
         If the execution policy object is of any other type, the behavior
         is implementation-defined.
-    </li>
+    </del></li>
 </ul>
 </blockquote>
 
