@@ -1,0 +1,264 @@
+<pre class='metadata'>
+Group: isowg21
+Title: Hotel Parallelifornia: terminate() for Parallel Algorithms Exception Handling
+Shortname: P0394
+Revision: 4
+Audience: SG1
+Editor: JF Bastien, Google, jfb@google.com
+Editor: Bryce Adelstein Lelbach, Berkeley Lab, balelbach@lbl.gov
+Date: 2016-06-21
+</pre>
+
+<center><big><i>You can throw any time you like, but the exceptions can never leave.</i></big></center>
+
+Background {#bg}
+================
+
+<a href="http://wg21.link/P0333r0">P0333r0 Improving Parallel Algorithm Exception Handling</a> states:
+
+<blockquote>
+The exception handling behavior of parallel algorithms invoked with <code highlight="c++">par_unseq</code> (the <code highlight="c++">parallel_unsequenced_execution_policy</code>) is inconsistent with the exception handling behavior of the other two execution policies specified in the IS (<code highlight="c++">seq</code> AKA <code highlight="c++">sequential_execution_policy</code> and <code highlight="c++">par</code> AKA <code highlight="c++">parallel_execution_policy</code>).
+
+25.2.4 [algorithms.parallel.exception] states that if an element access function exits via an uncaught exception in a parallel algorithm invoked under the <code highlight="c++">par_unseq</code> execution policy, <code highlight="c++">terminate()</code> will be called. This is inconsistent with the other two policies, which would exit by throwing either the uncaught exception or an <code highlight="c++">exception_list</code> containing (at least) the uncaught exception.
+</blockquote>
+
+SG1 Feedback on P0333 {#sg1fb333}
+=================================
+
+P0333r0 proposed addressing this problem by allowing <code highlight="c++">par_unseq</code> element access functions to throw exceptions. SG1's discussion in Oulu concludes that throwing exceptions pessimizes code which cannot be proven to not throw, e.g. when invoking opaque functions which aren't marked as <code highlight="c++">noexcept</code> (see <a href="#exam2">Example #2</a>). Invoking <code highlight="c++">terminate()</code> greatly simplifies code generation in these cases. 
+
+We therefore propose to fix the inconsistency by making all parallel algorithms invoke <code highlight="c++">terminate()</code> if element access functions exit via an uncaught exception. This has the added benefit of removing the need for <code highlight="c++">exception_list</code>. A parallel algorithm is still allowed to throw <code highlight="c++">bad_alloc</code> (if it fails to acquire temporary memory resources for parallel execution), but nothing else may be thrown. There is existing precedent for calling <code highlight="c++">terminate()</code> when an exception escapes from <code highlight="c++">thread</code>, <code highlight="c++">main()</code> or a transaction in the <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4514.pdf">Transaction TS</a>.
+
+Removing the need for <code highlight="c++">exception_list</code> solves outstanding design concerns with <code highlight="c++">exception_list</code> which were raised at Jacksonville during the <a href="http://wiki.edg.com/bin/view/Wg21jacksonville/P0024">discussion of P0024 The Parallelism TS Should be Standardized</a>. Specifically, there was concern about having an <code highlight="c++">exception_list</code> which was not constructible by users. The consensus in LEWG at Jacksonville was to give <code highlight="c++">exception_list</code> user-accessible constructors and mutators for C++17.
+
+<a href="http://wg21.link/D0322r1">D0322r1 exception_list</a> proposed a possible design for a user-constructible <code highlight="c++">exception_list</code>. Designing this <code highlight="c++">exception_list</code>, is a difficult task. <code highlight="c++">exception_list</code> derives from <code highlight="c++">exception</code>, and in a parallel context it could potentially be caught in multiple threads concurrently. Thus, any <code highlight="c++">exception_list</code> design would need to be thread-safe. To ensure thread-safety and to maintain consistency with all other standard exceptions, the authors of D0322r1 felt it was necessary for <code highlight="c++">exception_list</code> to be immutable. The standard library does not currently have immutable containers; <code highlight="c++">exception_list</code> would be the first, and thus would be exploring an entirely new design space. At Oulu, the authors of D0322r1 and LEWG felt that there was not sufficient time before C++17 to decide on a design for immutable containers in the standard library. By removing the need for <code highlight="c++">exception_list</code>, it is not necessary for it to be fixed in time for C++17.
+
+Further issues with <code highlight="c++">exception_list</code> include:
+
+* The order in which <code highlight="c++">exception_list</code> is populated is unspecified, since the algorithms are concurrent and/or parallel.
+* Whether implementations forge ahead or abort early is implementation-defined.
+* Which NTBS content is expected in <code highlight="c++">.what()</code> considering that <code highlight="c++">exception_list</code> is generated at runtime, <code highlight="c++">.what()</code> cannot allocate, and an <code highlight="c++">exception_list</code> may be very larger. If the NTBS is constructed optimistically based on the contents, it may well run out of memory while enumerating the members. Otherwise, the NTBS is unlikely to provide useful information.
+* Whether and when nested <code highlight="c++">exception_list</code>s are allowed is unclear.
+* As discussed in <a href="http://wg21.link/N4157">N4157 Relaxing Packaging Rules for Exceptions Thrown by Parallel Algorithms</a>, walking an <code highlight="c++">exception_list</code> is not easy. You must recursively walk the list to deal with nested <code highlight="c++">exception_list</code>s and unpackage the underlying <code highlight="c++">exception_ptr</code>s (see <a href="#exam1">Example 1</a>).
+
+SG1 Feedback on D0394 {#sg1fb394}
+=================================
+
+SG1 reviewed D0394 on Wednesday morning at Oulu. A straw poll was taken about forwarding this to LEWG for C++17:
+
+<table class="def">
+<tr>
+<th><b>SF</b></th>
+<th><b>F</b></th>
+<th><b>N</b></th>
+<th><b>A</b></th>
+<th><b>SA</b></th>
+</tr>
+<tr>
+<th>12</th>
+<th>5</th>
+<th>1</th>
+<th>0</th>
+<th>0</th>
+</tr>
+</table>
+
+LEWG Feedback on D0394 {#lewgfb394}
+===================================
+
+LEWG reviewed D0394 on Thursday morning at Oulu. A straw poll was taken about forwarding this to LWG for C++17:
+
+<table class="def">
+<tr>
+<th><b>SF</b></th>
+<th><b>F</b></th>
+<th><b>N</b></th>
+<th><b>A</b></th>
+<th><b>SA</b></th>
+</tr>
+<tr>
+<th>13</th>
+<th>1</th>
+<th>2</th>
+<th>0</th>
+<th>0</th>
+</tr>
+</table>
+
+LWG Feedback on D0394 {#lwgfb394}
+=================================
+
+LEWG reviewed D0394 on Thursday evening at Oulu. A straw poll was taken about sending this to plenary for C++17:
+
+<table class="def">
+<tr>
+<th><b>SF</b></th>
+<th><b>F</b></th>
+<th><b>N</b></th>
+<th><b>A</b></th>
+<th><b>SA</b></th>
+</tr>
+<tr>
+<th>7</th>
+<th>6</th>
+<th>0</th>
+<th>0</th>
+<th>0</th>
+</tr>
+</table>
+
+Proposed Wording Change {#prop}
+===============================
+
+Add the following clause after 15.5.1.1 (1.12) [except.terminate]:
+
+<blockquote>
+— when execution of the initial function of a thread exits via an exception (30.3.1.2), or 
+<br />
+<ins>
+— when execution of an <em>element access function</em> (25.2.1) of a parallel algorithm
+exits via an exception (25.2.4), or
+</ins>
+</blockquote>
+
+Apply the following changes to 17.6.1.2 [headers] paragraph 2:
+
+<blockquote>
+The C++ standard library provides <ins>60</ins><del>61</del> C++ library headers, as shown in Table 14.
+</blockquote>
+
+In 17.6.1.2 [headers], delete <code>&lt;exception_list&gt;</code> from Table 14.
+
+In 18.1 [support.general], delete the row for exception lists from Table 29.
+
+Delete 18.8.8 [support.exception.list]. 
+
+Apply the following changes to 25.2.4 [algorithms.parallel.exceptions]
+paragraph 2:
+
+<blockquote>
+During the execution of a parallel algorithm, if the invocation of an element
+access function exits via an uncaught exception, <ins><code>terminate()</code> is called.</ins>
+<del>the behavior of the program
+is determined by the type of execution policy used to invoke the algorithm:</del>
+
+<ul>
+    <li><del>
+        If the execution policy object is of type
+        <code>parallel_vector_execution_policy</code>,
+        <code>terminate()</code> is called.
+    </del></li>
+    <li><del>
+        If the execution policy object is of type
+        <code>sequential_execution_policy</code> or
+        <code>parallel_ execution_policy</code>, the execution
+        of the algorithm exits via an exception. The exception will be an
+        <code>exception_list</code> containing all uncaught exceptions
+        thrown during the invocations of element access functions, or optionally
+        the uncaught exception if there was only one.
+        [<em>Note:</em> For example, when <code>for_each</code> is executed
+        sequentially, if an invocation of the user-provided function object
+        throws an exception, <code>for_each</code> can exit via the
+        uncaught exception, or throw an <code>exception_list</code>
+        containing the original exception exception. - <em>end note</em>]
+        [<em>Note:</em> These guarantees imply that, unless the algorithm
+        has failed to allocate memory and exits via <code>bad_alloc</code>,
+        all exceptions thrown during the execution of the algorithm are
+        communicated to the caller. It is unspecified whether an algorithm
+        implementation will "forge ahead" after encountering and capturing
+        a user exception. - <em>end note</em>]
+        [<em>Note:</em> The algorithm may exit via the
+        <code>bad_alloc</code> exception even if one or more user-provided
+        function objects have exited via an exception. For example, this 
+        can happen when an algorithm fails to allocate memory while
+        creating or adding elements to the <code>exception_list</code>
+        object. - <em>end note</em>]
+    </del></li>
+    <li><del>
+        If the execution policy object is of any other type, the behavior
+        is implementation-defined.
+    </del></li>
+</ul>
+</blockquote>
+
+Examples {#exam}
+================
+
+<span id="exam1">1.) Example of recursively walking an <code highlight="c++">exception_list</code>. The ordering of the list is unspecified. Currently there is no standard library facility to help unpack an <code highlight="c++">exception_list</code>.</span>
+
+<pre highlight="c++">
+void walk(const exception_ptr& e) {
+    try {
+        rethrow_exception(e);
+    } catch (const range_error& r) {
+        cout << "found a range error\n";
+    } catch (const exception_list& y) {
+        for (auto d : y)
+            walk(d);
+    }
+}
+
+void example(Iter first, Iter last, bool (*p)(const Foo&)) {
+    try {
+        return none_of(par, first, last, p);
+    } catch (...) {
+        walk(current_exception());
+    }
+}
+</pre>
+
+<span id="exam2">2.) Example of how opaque calls can force a vectorizing SIMD compiler to pessimize a function by forcing it to prepare for divergence of control flow.</span>
+
+<pre highlight="c++">
+struct foo
+{
+    foo(); 
+    ~foo();
+    void bar(); // Won't throw, but not noexcept
+    void bar_noexcept() noexcept;
+};
+
+void initialize(vector&lt;foo&gt;&amp; v)
+{
+    #pragma omp simd
+    for (auto&amp; e : v)
+    {
+        foo f;
+
+        // .bar() might exit via exception. If it does, the exception boils
+        // up into this context and we have to do stack unwinding before 
+        // initialize exits via an uncaught exception.
+        //
+        // This can lead to a divergence of control flow. Multiple SIMD lanes
+        // will be executing .bar() concurrently, but only one of them may
+        // throw. This requires masking all the way up the call chain within
+        // the SIMD region. This is blisteringly expensive, especially on SIMD
+        // architectures without full masking support.
+        f.bar();
+
+        e = f;
+    }
+}
+
+void initialize_faster(vector&lt;foo&gt;&amp; v)
+{
+    #pragma omp simd
+    for (auto&amp; e : v)
+    {
+        foo f;
+
+        // We do not need to worry about .bar() exiting by uncaught exception,
+        // so we do not need to prepare for any divergence of control flow.
+
+        f.bar_noexcept();
+
+        e = f;
+    }
+}
+</pre>
+
+Acknowledgments {#acko}
+=======================
+
+Our thanks to Pablo Halpern, Alisdair Meredith and various members of both SG1 and LEWG for their contributions to this proposal.
+
